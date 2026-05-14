@@ -1,6 +1,9 @@
 import os
 import logging
 import importlib
+import pickle
+import json
+import time
 logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
 from langchain_core.tools import tool
 from sentence_transformers import SentenceTransformer
@@ -10,6 +13,11 @@ from tree_sitter import Parser, Language
 
 # Load a lightweight embedding model
 embedder = SentenceTransformer('all-MiniLM-L6-v2')
+
+INDEX_DIR = os.path.join(os.getcwd(), '.ollama-agent', 'index')
+MANIFEST_PATH = os.path.join(INDEX_DIR, 'manifest.json')
+METADATA_PATH = os.path.join(INDEX_DIR, 'metadata.pkl')
+FAISS_INDEX_PATH = os.path.join(INDEX_DIR, 'index.faiss')
 
 IGNORE_DIRS = {
     '.git', '__pycache__', '.pytest_cache', 'node_modules', 
@@ -38,10 +46,52 @@ NODE_TYPES = {
 class VectorSearch:
     def __init__(self, directory: str):
         self.directory = directory
-        self.chunks = []  # List of dicts with 'text', 'path', 'line'
+        self.chunks = []  # List of dicts with 'text', 'path', 'line', 'embedding'
+        self.manifest = {}  # dict mapping path to mtime
         self._index = None
         self._initialized = False
         self._lang_cache = {}
+        self.load()
+
+    def load(self):
+        if not os.path.exists(INDEX_DIR):
+            return
+            
+        try:
+            if os.path.exists(MANIFEST_PATH):
+                with open(MANIFEST_PATH, 'r') as f:
+                    self.manifest = json.load(f)
+            
+            if os.path.exists(METADATA_PATH):
+                with open(METADATA_PATH, 'rb') as f:
+                    self.chunks = pickle.load(f)
+            
+            if os.path.exists(FAISS_INDEX_PATH):
+                self._index = faiss.read_index(FAISS_INDEX_PATH)
+                self._initialized = True
+                logging.info(f"Loaded existing vector index with {len(self.chunks)} chunks")
+        except Exception as e:
+            logging.error(f"Error loading vector index: {e}")
+            self.chunks = []
+            self.manifest = {}
+            self._index = None
+
+    def save(self):
+        try:
+            os.makedirs(INDEX_DIR, exist_ok=True)
+            
+            with open(MANIFEST_PATH, 'w') as f:
+                json.dump(self.manifest, f)
+            
+            with open(METADATA_PATH, 'wb') as f:
+                pickle.dump(self.chunks, f)
+            
+            if self._index:
+                faiss.write_index(self._index, FAISS_INDEX_PATH)
+            
+            logging.info(f"Saved vector index with {len(self.chunks)} chunks")
+        except Exception as e:
+            logging.error(f"Error saving vector index: {e}")
 
     def _get_language(self, pkg_name: str):
         if pkg_name in self._lang_cache:
@@ -122,34 +172,65 @@ class VectorSearch:
         return chunks
 
     def refresh(self):
-        self.chunks = []
-        texts = []
+        current_files = {}
         for root, dirs, files in os.walk(self.directory):
-            # Prune ignored directories
             dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-            
             for file in files:
                 if file.endswith(('.py', '.md', '.txt', '.java', '.kt', '.ts', '.tsx', '.js')):
                     path = os.path.join(root, file)
                     try:
-                        # Skip files larger than 1MB
-                        if os.path.getsize(path) > 1024 * 1024:
-                            continue
-                        with open(path, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                            if content.strip():
-                                file_chunks = self._get_chunks(content, path)
-                                for chunk in file_chunks:
-                                    self.chunks.append(chunk)
-                                    texts.append(chunk['text'])
+                        mtime = os.path.getmtime(path)
+                        current_files[path] = mtime
                     except:
                         continue
-        
-        if texts:
-            embeddings = embedder.encode(texts)
-            self._index = faiss.IndexFlatL2(embeddings.shape[1])
-            self._index.add(np.array(embeddings).astype('float32'))
-        
+
+        # Identify changes
+        deleted_files = set(self.manifest.keys()) - set(current_files.keys())
+        changed_files = {path for path, mtime in current_files.items() 
+                         if path not in self.manifest or mtime > self.manifest.get(path, 0)}
+
+        if not deleted_files and not changed_files:
+            self._initialized = True
+            return
+
+        # Remove chunks for deleted or changed files
+        files_to_remove = deleted_files | changed_files
+        self.chunks = [c for c in self.chunks if c['path'] not in files_to_remove]
+
+        # Re-index changed files
+        for path in changed_files:
+            try:
+                if os.path.getsize(path) > 1024 * 1024:
+                    continue
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    if content.strip():
+                        file_chunks = self._get_chunks(content, path)
+                        if file_chunks:
+                            texts = [c['text'] for c in file_chunks]
+                            embeddings = embedder.encode(texts)
+                            for chunk, emb in zip(file_chunks, embeddings):
+                                chunk['embedding'] = emb
+                                self.chunks.append(chunk)
+                self.manifest[path] = current_files[path]
+            except Exception as e:
+                logging.error(f"Error indexing {path}: {e}")
+                continue
+
+        # Clean up manifest for deleted files
+        for path in deleted_files:
+            if path in self.manifest:
+                del self.manifest[path]
+
+        # Rebuild FAISS index
+        if self.chunks:
+            all_embeddings = np.array([c['embedding'] for c in self.chunks]).astype('float32')
+            self._index = faiss.IndexFlatL2(all_embeddings.shape[1])
+            self._index.add(all_embeddings)
+        else:
+            self._index = None
+
+        self.save()
         self._initialized = True
 
     def search(self, query: str, k: int = 5) -> str:
