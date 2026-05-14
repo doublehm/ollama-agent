@@ -5,10 +5,10 @@
     "args": ["-y", "@modelcontextprotocol/server-github"],
     "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": ""}
   },
-  "gws": {
+  "google-drive": {
     "transport": "stdio",
     "command": "npx",
-    "args": ["-y", "@google-cloud/gws-mcp"]
+    "args": ["-y", "@modelcontextprotocol/server-google-drive"]
   },
   "gcp": {
     "transport": "stdio",
@@ -23,6 +23,6 @@
   "notebooklm": {
     "transport": "stdio",
     "command": "npx",
-    "args": ["-y", "notebooklm-mcp"]
+    "args": ["-y", "notebooklm-mcp-cli"]
   }
 }

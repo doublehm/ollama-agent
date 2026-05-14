@@ -114,7 +114,7 @@ async def main():
 
     while True:
         try:
-            user_input = session.prompt("> ").strip()
+            user_input = await session.prompt_async("> ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\nBye.")
             await mcp_hub.shutdown()
