@@ -3,12 +3,13 @@ from langchain_ollama import ChatOllama
 class ModelManager:
     # Model configuration: (model_name, num_gpu)
     MODELS = {
-        "manager": ("llama3.3:70b", 0),      # IQ-heavy, CPU/RAM only
-        "scientist": ("llama3.1:70b", 0),    # DS-heavy, CPU/RAM only
-        "designer": ("llama3.1:70b", 0),     # Visual/spatial, CPU/RAM only
-        "cloud": ("llama3.1:70b", 0),        # DevOps-heavy, CPU/RAM only
-        "coder": ("qwen2.5-coder:32b", 10),  # Code-heavy, partial GPU
-        "summarizer": ("qwen2.5:0.5b", 30),  # Background, full GPU
+        "manager": ("llama3.3:70b", 0),
+        "coder": ("qwen2.5-coder:32b", 10),
+        "scientist": ("llama3.1:70b", 0),
+        "designer": ("llama3.1:70b", 0),
+        "cloud": ("llama3.1:70b", 0),
+        "linux": ("llama3.3:70b", 0),
+        "summarizer": ("qwen2.5:0.5b", 30),
     }
 
     def get_model(self, role: str):
