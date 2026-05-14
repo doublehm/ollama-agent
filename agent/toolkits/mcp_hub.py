@@ -13,13 +13,17 @@ class MCPHub:
         if not os.path.exists(self.config_path):
             return []
             
-        with open(self.config_path) as f:
-            config = json.load(f)
-        
-        # MultiServerMCPClient takes a dict of server configs
-        self.client = MultiServerMCPClient(config)
-        self.tools = await self.client.get_tools()
-        return self.tools
+        try:
+            with open(self.config_path) as f:
+                config = json.load(f)
+            
+            # MultiServerMCPClient takes a dict of server configs
+            self.client = MultiServerMCPClient(config)
+            self.tools = await self.client.get_tools()
+            return self.tools
+        except Exception as e:
+            print(f"[warning] Failed to initialize MCP tools: {e}")
+            return []
 
     async def shutdown(self):
         if self.client:
