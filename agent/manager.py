@@ -19,7 +19,7 @@ def classify_domain(text: str) -> str:
             return domain
     return "general"
 
-def manager_node(state):
+async def manager_node(state):
     # Get relevant MCP tools from state (readonly ones for manager)
     mcp_tools = state.get("mcp_tools", [])
     # Heuristic: tools that don't sound like "create", "delete", "write", "update"
@@ -34,7 +34,7 @@ def manager_node(state):
     prompt_with_instructions = MANAGER_SYSTEM_PROMPT + "\n\nCRITICAL: Identify the domain in your response (ds, design, cloud, linux, or general)."
     
     messages = [SystemMessage(content=prompt_with_instructions)] + state["messages"]
-    response = model_with_tools.invoke(messages)
+    response = await model_with_tools.ainvoke(messages)
     response.name = "manager"
     
     # Detect domain from response content

@@ -7,7 +7,7 @@ from agent.tools import all_tools
 
 model_manager = ModelManager()
 
-def designer_node(state):
+async def designer_node(state):
     # Check for images in the message history (most recent tool output ending in .png)
     image_path = None
     for msg in reversed(state["messages"]):
@@ -26,15 +26,15 @@ def designer_node(state):
         # Note: llava usually doesn't support tool calling, so we don't bind tools
         model = model_manager.get_model("vision")
         # Pass the image path to the model via the images parameter
-        response = model.invoke(messages, images=[image_path])
+        response = await model.ainvoke(messages, images=[image_path])
     else:
         # Get relevant MCP tools from state
         mcp_tools = state.get("mcp_tools", [])
         relevant_mcp = [t for t in mcp_tools if t.name.startswith("stitch_")]
 
-        # Designer uses the 70B model for general visual/spatial reasoning
+        # Designer uses the 31B model for general visual/spatial reasoning
         model = model_manager.get_model("designer").bind_tools(all_tools + relevant_mcp)
-        response = model.invoke(messages)
+        response = await model.ainvoke(messages)
     
     response.name = "designer"
     return {"messages": [response], "current_actor": "designer"}

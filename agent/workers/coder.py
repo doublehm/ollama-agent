@@ -6,7 +6,7 @@ from agent.tools import all_tools
 
 model_manager = ModelManager()
 
-def coder_node(state):
+async def coder_node(state):
     # Get relevant MCP tools from state
     mcp_tools = state.get("mcp_tools", [])
     relevant_mcp = [t for t in mcp_tools if t.name.startswith("github_")]
@@ -21,6 +21,6 @@ def coder_node(state):
     full_prompt = CODER_SYSTEM_PROMPT.format(cwd=cwd, plan=plan)
     
     messages = [SystemMessage(content=full_prompt)] + state["messages"]
-    response = model.invoke(messages)
+    response = await model.ainvoke(messages)
     response.name = "coder"
     return {"messages": [response], "current_actor": "coder"}

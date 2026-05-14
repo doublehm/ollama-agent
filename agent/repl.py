@@ -205,7 +205,7 @@ async def main():
             # Trim history to fit model context window and prevent hallucination
             trimmed_history = trim_history(history)
             processed_count = len(trimmed_history)
-            for snapshot in graph.stream(
+            async for snapshot in graph.astream(
                 {"messages": trimmed_history, "mcp_tools": mcp_tools},
                 stream_mode="values",
             ):
