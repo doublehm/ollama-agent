@@ -32,6 +32,9 @@ class VectorSearch:
                 if file.endswith(('.py', '.md', '.txt', '.java', '.kt', '.ts', '.tsx')):
                     path = os.path.join(root, file)
                     try:
+                        # Skip files larger than 1MB
+                        if os.path.getsize(path) > 1024 * 1024:
+                            continue
                         with open(path, 'r', encoding='utf-8') as f:
                             content = f.read()
                             if content.strip():

@@ -1,6 +1,7 @@
 import os
 import signal
 import subprocess
+import shlex
 import httpx
 from duckduckgo_search import DDGS
 from langchain_core.tools import StructuredTool, tool
@@ -105,12 +106,14 @@ def run_shell(command: str) -> str:
 class _GitCmdInput(BaseModel):
     args: str
 
+import shlex
+
 def _git_cmd_impl(args: str) -> str:
     if not confirm.ask_user_confirm("git_cmd", {"args": args}):
         return "Tool call declined by user."
     try:
         result = subprocess.run(
-            ["git"] + args.split(),
+            ["git"] + shlex.split(args),
             capture_output=True, text=True, timeout=30
         )
         return (result.stdout + result.stderr).strip() or "(no output)"
