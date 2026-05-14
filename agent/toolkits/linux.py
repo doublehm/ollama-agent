@@ -8,8 +8,11 @@ def journal_explorer(query: str, lines: int = 50):
     cmd = ["journalctl", "-n", str(lines), "--no-pager"]
     if query:
         cmd.extend(["-g", query])
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    return result.stdout or "No matching logs found."
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        return result.stdout or "No matching logs found."
+    except subprocess.TimeoutExpired:
+        return "Error: journalctl command timed out after 10 seconds."
 
 @tool
 def system_service_control(service: str, action: str):
