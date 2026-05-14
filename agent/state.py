@@ -15,3 +15,5 @@ class AgentState(TypedDict):
     root_goal: str
     # The current active node/actor in the graph
     current_actor: str
+    # Dynamic MCP tools loaded by the hub
+    mcp_tools: List[Any]

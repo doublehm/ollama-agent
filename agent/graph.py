@@ -9,8 +9,9 @@ from agent.workers.linux import linux_node
 from langgraph.prebuilt import ToolNode
 from agent.tools import all_tools
 
-def build_graph():
+def build_graph(mcp_tools=None):
     builder = StateGraph(AgentState)
+    mcp_tools = mcp_tools or []
     
     # Add nodes
     builder.add_node("manager", manager_node)
@@ -19,7 +20,7 @@ def build_graph():
     builder.add_node("designer", designer_node)
     builder.add_node("cloud", cloud_node)
     builder.add_node("linux", linux_node)
-    builder.add_node("tools", ToolNode(all_tools))
+    builder.add_node("tools", ToolNode(all_tools + mcp_tools))
     
     # Manager routing: can use read-only tools for research, then route to specialist
     def route_from_manager(state):

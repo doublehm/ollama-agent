@@ -20,8 +20,15 @@ def classify_domain(text: str) -> str:
     return "general"
 
 def manager_node(state):
+    # Get relevant MCP tools from state (readonly ones for manager)
+    mcp_tools = state.get("mcp_tools", [])
+    # Heuristic: tools that don't sound like "create", "delete", "write", "update"
+    # For now, we'll just bind them all but the prompt tells it to research.
+    # Official readonly heuristic usually involves checking tool schema for side-effects,
+    # but we'll stick to local tools + all mcp tools for research.
+    
     model = model_manager.get_model("manager")
-    model_with_tools = model.bind_tools(readonly_tools)
+    model_with_tools = model.bind_tools(readonly_tools + mcp_tools)
     
     # Add domain instruction
     prompt_with_instructions = MANAGER_SYSTEM_PROMPT + "\n\nCRITICAL: Identify the domain in your response (ds, design, cloud, linux, or general)."

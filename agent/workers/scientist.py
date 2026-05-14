@@ -8,8 +8,12 @@ from agent.tools import all_tools
 model_manager = ModelManager()
 
 def scientist_node(state):
+    # Get relevant MCP tools from state
+    mcp_tools = state.get("mcp_tools", [])
+    relevant_mcp = [t for t in mcp_tools if t.name.startswith("gws_") or t.name.startswith("notebooklm_")]
+    
     # Scientist uses the 70B model
-    model = model_manager.get_model("scientist").bind_tools(all_tools)
+    model = model_manager.get_model("scientist").bind_tools(all_tools + relevant_mcp)
     
     cwd = os.getcwd()
     full_prompt = SCIENTIST_SYSTEM_PROMPT.format(cwd=cwd)

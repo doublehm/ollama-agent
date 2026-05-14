@@ -1,4 +1,3 @@
-# agent/workers/linux.py
 import os
 from agent.models import ModelManager
 from agent.prompts.linux import LINUX_SYSTEM_PROMPT
@@ -8,8 +7,12 @@ from agent.tools import all_tools
 model_manager = ModelManager()
 
 def linux_node(state):
+    # Get relevant MCP tools from state
+    mcp_tools = state.get("mcp_tools", [])
+    # For linux, we'll bind all local tools and maybe specific cloud tools if relevant
+    
     # Linux specialist uses the 70B model for deep system reasoning
-    model = model_manager.get_model("manager").bind_tools(all_tools)
+    model = model_manager.get_model("manager").bind_tools(all_tools + mcp_tools)
     
     cwd = os.getcwd()
     full_prompt = LINUX_SYSTEM_PROMPT.format(cwd=cwd)

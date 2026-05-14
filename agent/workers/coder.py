@@ -7,8 +7,12 @@ from agent.tools import all_tools
 model_manager = ModelManager()
 
 def coder_node(state):
+    # Get relevant MCP tools from state
+    mcp_tools = state.get("mcp_tools", [])
+    relevant_mcp = [t for t in mcp_tools if t.name.startswith("github_")]
+    
     # Swap to the Coder model (Qwen 32B)
-    model = model_manager.get_model("coder").bind_tools(all_tools)
+    model = model_manager.get_model("coder").bind_tools(all_tools + relevant_mcp)
     
     # Enrich prompt with plan and context
     cwd = os.getcwd()

@@ -28,8 +28,12 @@ def designer_node(state):
         # Pass the image path to the model via the images parameter
         response = model.invoke(messages, images=[image_path])
     else:
+        # Get relevant MCP tools from state
+        mcp_tools = state.get("mcp_tools", [])
+        relevant_mcp = [t for t in mcp_tools if t.name.startswith("stitch_")]
+
         # Designer uses the 70B model for general visual/spatial reasoning
-        model = model_manager.get_model("designer").bind_tools(all_tools)
+        model = model_manager.get_model("designer").bind_tools(all_tools + relevant_mcp)
         response = model.invoke(messages)
     
     response.name = "designer"
