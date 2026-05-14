@@ -8,7 +8,7 @@
   "google-drive": {
     "transport": "stdio",
     "command": "npx",
-    "args": ["-y", "@modelcontextprotocol/server-google-drive"]
+    "args": ["-y", "mcp-google-drive"]
   },
   "gcp": {
     "transport": "stdio",

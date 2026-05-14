@@ -114,7 +114,8 @@ async def main():
 
     while True:
         try:
-            user_input = await session.prompt_async("> ").strip()
+            user_input = await session.prompt_async("> ")
+            user_input = user_input.strip()
         except (EOFError, KeyboardInterrupt):
             print("\nBye.")
             await mcp_hub.shutdown()
@@ -169,7 +170,8 @@ async def main():
                 time_str = datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
                 console.print(f"  [{i+1}] {f} ({time_str})")
             
-            choice = session.prompt("\nEnter number to resume (or press Enter to cancel): ").strip()
+            choice = await session.prompt_async("\nEnter number to resume (or press Enter to cancel): ")
+            choice = choice.strip()
             if not choice.isdigit() or int(choice) < 1 or int(choice) > len(backups):
                 console.print("[dim]Cancelled resume.[/dim]")
                 continue
