@@ -141,6 +141,7 @@ def kill_process(pid: int) -> str:
         return f"Error killing PID {pid}: {e}"
 
 from agent.vector_search import vector_search
+from agent.toolkits.linux import journal_explorer, system_service_control, hardware_stats
 
 all_tools = [
     read_file,
@@ -154,6 +155,9 @@ all_tools = [
     git_cmd,
     kill_process,
     vector_search,
+    journal_explorer,
+    system_service_control,
+    hardware_stats,
 ]
 
 readonly_tools = [
@@ -164,4 +168,6 @@ readonly_tools = [
     web_fetch,
     web_search,
     vector_search,
+    journal_explorer,
+    hardware_stats,
 ]
