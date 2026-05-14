@@ -141,6 +141,7 @@ def kill_process(pid: int) -> str:
 from agent.vector_search import vector_search
 from agent.toolkits.linux import journal_explorer, system_service_control, hardware_stats
 from agent.toolkits.ds import run_ds_experiment
+from agent.toolkits.design import get_ui_patterns
 
 all_tools = [
     read_file,
@@ -158,6 +159,7 @@ all_tools = [
     system_service_control,
     hardware_stats,
     run_ds_experiment,
+    get_ui_patterns,
 ]
 
 readonly_tools = [
@@ -170,4 +172,5 @@ readonly_tools = [
     vector_search,
     journal_explorer,
     hardware_stats,
+    get_ui_patterns,
 ]
