@@ -26,6 +26,6 @@ def manager_node(state):
     
     # If the manager didn't call a tool, it's likely providing a plan or delegating
     if not response.tool_calls:
-        return {"messages": [response], "plan": response.content}
+        return {"messages": [response], "plan": response.content, "current_actor": "manager"}
     
-    return {"messages": [response]}
+    return {"messages": [response], "current_actor": "manager"}

@@ -13,3 +13,5 @@ class AgentState(TypedDict):
     active_domain: str
     # The original goal from the user
     root_goal: str
+    # The current active node/actor in the graph
+    current_actor: str

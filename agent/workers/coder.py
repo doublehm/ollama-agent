@@ -19,4 +19,4 @@ def coder_node(state):
     messages = [SystemMessage(content=full_prompt)] + state["messages"]
     response = model.invoke(messages)
     response.name = "coder"
-    return {"messages": [response]}
+    return {"messages": [response], "current_actor": "coder"}

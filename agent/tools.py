@@ -1,15 +1,11 @@
 import os
 import signal
 import subprocess
-import pty
-
 import httpx
 from duckduckgo_search import DDGS
 from langchain_core.tools import StructuredTool, tool
 from pydantic import BaseModel
-
 import agent.confirm as confirm
-
 
 # ── Auto-run tools ────────────────────────────────────────────────────────────
 
@@ -22,7 +18,6 @@ def read_file(path: str) -> str:
     except Exception as e:
         return f"Error reading {path}: {e}"
 
-
 @tool
 def list_dir(path: str) -> str:
     """List the entries in a directory."""
@@ -32,23 +27,23 @@ def list_dir(path: str) -> str:
     except Exception as e:
         return f"Error listing {path}: {e}"
 
-
 @tool
 def grep(pattern: str, path: str) -> str:
     """Search for a regex pattern in a file or directory (recursive)."""
-    result = subprocess.run(
-        ["grep", "-rn", pattern, path],
-        capture_output=True, text=True,
-    )
-    return result.stdout[:5000] if result.stdout else ""
-
+    try:
+        result = subprocess.run(
+            ["grep", "-rn", pattern, path],
+            capture_output=True, text=True, timeout=10
+        )
+        return result.stdout[:5000] if result.stdout else ""
+    except subprocess.TimeoutExpired:
+        return "Error: grep timed out after 10 seconds."
 
 @tool
 def get_processes() -> str:
     """List running processes."""
     result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
     return result.stdout[:3000]
-
 
 @tool
 def web_fetch(url: str) -> str:
@@ -58,7 +53,6 @@ def web_fetch(url: str) -> str:
         return response.text[:5000]
     except Exception as e:
         return f"Error fetching {url}: {e}"
-
 
 @tool
 def web_search(query: str) -> str:
@@ -75,7 +69,6 @@ def web_search(query: str) -> str:
     except Exception as e:
         return f"Error searching: {e}"
 
-
 # ── Confirm-required tools ────────────────────────────────────────────────────
 
 @tool
@@ -90,44 +83,41 @@ def write_file(path: str, content: str) -> str:
     except Exception as e:
         return f"Error writing {path}: {e}"
 
-
 @tool
 def run_shell(command: str) -> str:
     """Execute a command in fish shell. Requires confirmation."""
     if not confirm.ask_user_confirm("run_shell", {"command": command}):
         return "Tool call declined by user."
     try:
-        output = []
-        def read(fd):
-            data = os.read(fd, 1024)
-            output.append(data)
-            return data
-            
-        pty.spawn(["fish", "-c", command], read)
-        return b"".join(output).decode("utf-8", errors="replace").replace("\r\n", "\n")
+        result = subprocess.run(
+            ["fish", "-c", command],
+            capture_output=True, text=True, timeout=60,
+        )
+        output = result.stdout
+        if result.stderr:
+            output += "\n[stderr]: " + result.stderr
+        return output or "(no output)"
+    except subprocess.TimeoutExpired:
+        return "Error: command timed out after 60 seconds."
     except Exception as e:
         return f"Error running command: {e}"
 
-
 class _GitCmdInput(BaseModel):
     args: str
-
 
 def _git_cmd_impl(args: str) -> str:
     if not confirm.ask_user_confirm("git_cmd", {"args": args}):
         return "Tool call declined by user."
     try:
-        output = []
-        def read(fd):
-            data = os.read(fd, 1024)
-            output.append(data)
-            return data
-            
-        pty.spawn(["git"] + args.split(), read)
-        return b"".join(output).decode("utf-8", errors="replace").replace("\r\n", "\n")
+        result = subprocess.run(
+            ["git"] + args.split(),
+            capture_output=True, text=True, timeout=30
+        )
+        return (result.stdout + result.stderr).strip() or "(no output)"
+    except subprocess.TimeoutExpired:
+        return "Error: git command timed out after 30 seconds."
     except Exception as e:
         return f"Error running git {args}: {e}"
-
 
 git_cmd = StructuredTool.from_function(
     func=_git_cmd_impl,
@@ -135,7 +125,6 @@ git_cmd = StructuredTool.from_function(
     description="Run a git subcommand (e.g. 'status', 'log --oneline -5'). Requires confirmation.",
     args_schema=_GitCmdInput,
 )
-
 
 @tool
 def kill_process(pid: int) -> str:
@@ -147,7 +136,6 @@ def kill_process(pid: int) -> str:
         return f"Sent SIGTERM to PID {pid}"
     except Exception as e:
         return f"Error killing PID {pid}: {e}"
-
 
 from agent.vector_search import vector_search
 
@@ -162,5 +150,15 @@ all_tools = [
     run_shell,
     git_cmd,
     kill_process,
+    vector_search,
+]
+
+readonly_tools = [
+    read_file,
+    list_dir,
+    grep,
+    get_processes,
+    web_fetch,
+    web_search,
     vector_search,
 ]

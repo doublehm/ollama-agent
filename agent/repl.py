@@ -2,6 +2,7 @@
 import sys
 import os
 import json
+import re
 
 from langchain_core.messages import (
     AIMessage,
@@ -19,10 +20,17 @@ from prompt_toolkit.completion import WordCompleter
 
 console = Console()
 
+import re
+
+def strip_ansi(text: str) -> str:
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
+
 def log_markdown(content: str):
     try:
+        clean_content = strip_ansi(content)
         with open(".ollama-agent.md", "a", encoding="utf-8") as f:
-            f.write(content + "\n")
+            f.write(clean_content + "\n")
     except Exception as e:
         print(f"[warning] failed to write log: {e}")
 

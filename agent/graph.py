@@ -29,15 +29,9 @@ def build_graph():
 
     builder.add_conditional_edges("coder", should_continue_coder, ["tools", END])
     
-    # Tools routing back to caller based on message name
+    # Tools routing back to caller based on state['current_actor']
     def route_after_tools(state):
-        # Find the last message that initiated tool calls
-        for msg in reversed(state["messages"]):
-            if hasattr(msg, "tool_calls") and msg.tool_calls:
-                if msg.name == "manager":
-                    return "manager"
-                return "coder"
-        return "coder" # Fallback to coder
+        return state.get("current_actor", "coder")
 
     builder.add_conditional_edges("tools", route_after_tools, ["manager", "coder"])
     
