@@ -18,6 +18,10 @@ dependencies = [
     "sentence-transformers>=3.0",
     "faiss-cpu>=1.7",
     "numpy>=1.26",
+    "tree-sitter>=0.25.0",
+    "tree-sitter-python",
+    "tree-sitter-javascript",
+    "tree-sitter-typescript",
 ]
 
 [project.scripts]
