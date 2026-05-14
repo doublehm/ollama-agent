@@ -1,6 +1,7 @@
 import os
 import signal
 import subprocess
+import pty
 
 import httpx
 from duckduckgo_search import DDGS
@@ -96,16 +97,14 @@ def run_shell(command: str) -> str:
     if not confirm.ask_user_confirm("run_shell", {"command": command}):
         return "Tool call declined by user."
     try:
-        result = subprocess.run(
-            ["fish", "-c", command],
-            capture_output=True, text=True, timeout=30,
-        )
-        output = result.stdout
-        if result.stderr:
-            output += "\n[stderr]: " + result.stderr
-        return output or "(no output)"
-    except subprocess.TimeoutExpired:
-        return "Error: command timed out after 30 seconds."
+        output = []
+        def read(fd):
+            data = os.read(fd, 1024)
+            output.append(data)
+            return data
+            
+        pty.spawn(["fish", "-c", command], read)
+        return b"".join(output).decode("utf-8", errors="replace").replace("\r\n", "\n")
     except Exception as e:
         return f"Error running command: {e}"
 
@@ -118,11 +117,14 @@ def _git_cmd_impl(args: str) -> str:
     if not confirm.ask_user_confirm("git_cmd", {"args": args}):
         return "Tool call declined by user."
     try:
-        result = subprocess.run(
-            ["git"] + args.split(),
-            capture_output=True, text=True, cwd=os.getcwd(),
-        )
-        return (result.stdout + result.stderr).strip() or "(no output)"
+        output = []
+        def read(fd):
+            data = os.read(fd, 1024)
+            output.append(data)
+            return data
+            
+        pty.spawn(["git"] + args.split(), read)
+        return b"".join(output).decode("utf-8", errors="replace").replace("\r\n", "\n")
     except Exception as e:
         return f"Error running git {args}: {e}"
 
@@ -147,6 +149,8 @@ def kill_process(pid: int) -> str:
         return f"Error killing PID {pid}: {e}"
 
 
+from agent.vector_search import vector_search
+
 all_tools = [
     read_file,
     list_dir,
@@ -158,4 +162,5 @@ all_tools = [
     run_shell,
     git_cmd,
     kill_process,
+    vector_search,
 ]
