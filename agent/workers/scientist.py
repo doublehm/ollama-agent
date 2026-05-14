@@ -1,0 +1,20 @@
+# agent/workers/scientist.py
+import os
+from agent.models import ModelManager
+from agent.prompts.scientist import SCIENTIST_SYSTEM_PROMPT
+from langchain_core.messages import SystemMessage
+from agent.tools import all_tools
+
+model_manager = ModelManager()
+
+def scientist_node(state):
+    # Scientist uses the 70B model
+    model = model_manager.get_model("scientist").bind_tools(all_tools)
+    
+    cwd = os.getcwd()
+    full_prompt = SCIENTIST_SYSTEM_PROMPT.format(cwd=cwd)
+    
+    messages = [SystemMessage(content=full_prompt)] + state["messages"]
+    response = model.invoke(messages)
+    response.name = "scientist"
+    return {"messages": [response], "current_actor": "scientist"}

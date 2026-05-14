@@ -1,14 +1,12 @@
 import os
 import signal
 import subprocess
-
+import shlex
 import httpx
 from duckduckgo_search import DDGS
 from langchain_core.tools import StructuredTool, tool
 from pydantic import BaseModel
-
 import agent.confirm as confirm
-
 
 # ── Auto-run tools ────────────────────────────────────────────────────────────
 
@@ -21,7 +19,6 @@ def read_file(path: str) -> str:
     except Exception as e:
         return f"Error reading {path}: {e}"
 
-
 @tool
 def list_dir(path: str) -> str:
     """List the entries in a directory."""
@@ -31,23 +28,23 @@ def list_dir(path: str) -> str:
     except Exception as e:
         return f"Error listing {path}: {e}"
 
-
 @tool
 def grep(pattern: str, path: str) -> str:
     """Search for a regex pattern in a file or directory (recursive)."""
-    result = subprocess.run(
-        ["grep", "-rn", pattern, path],
-        capture_output=True, text=True,
-    )
-    return result.stdout[:5000] if result.stdout else ""
-
+    try:
+        result = subprocess.run(
+            ["grep", "-rn", pattern, path],
+            capture_output=True, text=True, timeout=10
+        )
+        return result.stdout[:5000] if result.stdout else ""
+    except subprocess.TimeoutExpired:
+        return "Error: grep timed out after 10 seconds."
 
 @tool
 def get_processes() -> str:
     """List running processes."""
     result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
     return result.stdout[:3000]
-
 
 @tool
 def web_fetch(url: str) -> str:
@@ -57,7 +54,6 @@ def web_fetch(url: str) -> str:
         return response.text[:5000]
     except Exception as e:
         return f"Error fetching {url}: {e}"
-
 
 @tool
 def web_search(query: str) -> str:
@@ -74,7 +70,6 @@ def web_search(query: str) -> str:
     except Exception as e:
         return f"Error searching: {e}"
 
-
 # ── Confirm-required tools ────────────────────────────────────────────────────
 
 @tool
@@ -89,7 +84,6 @@ def write_file(path: str, content: str) -> str:
     except Exception as e:
         return f"Error writing {path}: {e}"
 
-
 @tool
 def run_shell(command: str) -> str:
     """Execute a command in fish shell. Requires confirmation."""
@@ -98,34 +92,33 @@ def run_shell(command: str) -> str:
     try:
         result = subprocess.run(
             ["fish", "-c", command],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=60,
         )
         output = result.stdout
         if result.stderr:
             output += "\n[stderr]: " + result.stderr
         return output or "(no output)"
     except subprocess.TimeoutExpired:
-        return "Error: command timed out after 30 seconds."
+        return "Error: command timed out after 60 seconds."
     except Exception as e:
         return f"Error running command: {e}"
 
-
 class _GitCmdInput(BaseModel):
     args: str
-
 
 def _git_cmd_impl(args: str) -> str:
     if not confirm.ask_user_confirm("git_cmd", {"args": args}):
         return "Tool call declined by user."
     try:
         result = subprocess.run(
-            ["git"] + args.split(),
-            capture_output=True, text=True, cwd=os.getcwd(),
+            ["git"] + shlex.split(args),
+            capture_output=True, text=True, timeout=30
         )
         return (result.stdout + result.stderr).strip() or "(no output)"
+    except subprocess.TimeoutExpired:
+        return "Error: git command timed out after 30 seconds."
     except Exception as e:
         return f"Error running git {args}: {e}"
-
 
 git_cmd = StructuredTool.from_function(
     func=_git_cmd_impl,
@@ -133,7 +126,6 @@ git_cmd = StructuredTool.from_function(
     description="Run a git subcommand (e.g. 'status', 'log --oneline -5'). Requires confirmation.",
     args_schema=_GitCmdInput,
 )
-
 
 @tool
 def kill_process(pid: int) -> str:
@@ -146,6 +138,12 @@ def kill_process(pid: int) -> str:
     except Exception as e:
         return f"Error killing PID {pid}: {e}"
 
+from agent.vector_search import vector_search
+from agent.toolkits.linux import journal_explorer, system_service_control, hardware_stats
+from agent.toolkits.ds import run_ds_experiment
+from agent.toolkits.design import get_ui_patterns
+from agent.toolkits.cloud import terraform_validator, kubectl_navigator
+from agent.toolkits.vision import capture_host_screen, capture_android_screen
 
 all_tools = [
     read_file,
@@ -158,4 +156,29 @@ all_tools = [
     run_shell,
     git_cmd,
     kill_process,
+    vector_search,
+    journal_explorer,
+    system_service_control,
+    hardware_stats,
+    run_ds_experiment,
+    get_ui_patterns,
+    terraform_validator,
+    kubectl_navigator,
+    capture_host_screen,
+    capture_android_screen,
+]
+
+readonly_tools = [
+    read_file,
+    list_dir,
+    grep,
+    get_processes,
+    web_fetch,
+    web_search,
+    vector_search,
+    journal_explorer,
+    hardware_stats,
+    get_ui_patterns,
+    capture_host_screen,
+    capture_android_screen,
 ]
