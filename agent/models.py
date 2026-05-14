@@ -10,6 +10,7 @@ class ModelManager:
         "cloud": ("llama3.1:70b", 0),
         "linux": ("llama3.3:70b", 0),
         "summarizer": ("qwen2.5:0.5b", 30),
+        "vision": ("llava:7b", 30),
     }
 
     def get_model(self, role: str):

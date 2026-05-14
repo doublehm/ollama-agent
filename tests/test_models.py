@@ -23,6 +23,13 @@ def test_model_resolution():
     assert fallback_model.model == "qwen2.5:latest"
     assert fallback_model.num_gpu == 10
 
+def test_get_vision_model():
+    manager = ModelManager()
+    model = manager.get_model("vision")
+    assert model.model == "llava:7b"
+    assert model.num_gpu == 30
+    assert model.keep_alive == 0
+
 def test_aggressive_eviction():
     manager = ModelManager()
     model = manager.get_model("manager")
