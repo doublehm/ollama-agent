@@ -2,38 +2,59 @@ from langgraph.graph import StateGraph, START, END
 from agent.state import AgentState
 from agent.manager import manager_node
 from agent.workers.coder import coder_node
+from agent.workers.scientist import scientist_node
+from agent.workers.designer import designer_node
+from agent.workers.cloud import cloud_node
+from agent.workers.linux import linux_node
 from langgraph.prebuilt import ToolNode
 from agent.tools import all_tools
 
 def build_graph():
     builder = StateGraph(AgentState)
+    
+    # Add nodes
     builder.add_node("manager", manager_node)
     builder.add_node("coder", coder_node)
+    builder.add_node("scientist", scientist_node)
+    builder.add_node("designer", designer_node)
+    builder.add_node("cloud", cloud_node)
+    builder.add_node("linux", linux_node)
     builder.add_node("tools", ToolNode(all_tools))
     
-    # Manager routing: can use read-only tools for research
-    def should_continue_manager(state):
+    # Manager routing: can use read-only tools for research, then route to specialist
+    def route_from_manager(state):
         last_msg = state["messages"][-1]
         if last_msg.tool_calls:
             return "tools"
-        return "coder"
+        
+        domain = state.get("active_domain", "general")
+        if domain == "ds":
+            return "scientist"
+        if domain == "design":
+            return "designer"
+        if domain == "cloud":
+            return "cloud"
+        if domain == "linux":
+            return "linux"
+        return "coder" # default to general developer
 
-    builder.add_conditional_edges("manager", should_continue_manager, ["tools", "coder"])
+    builder.add_conditional_edges("manager", route_from_manager, ["tools", "scientist", "designer", "cloud", "linux", "coder"])
     
-    # Coder routing: can use all tools for implementation
-    def should_continue_coder(state):
+    # Specialized Worker routing (all use same logic: tools or END)
+    def should_continue_worker(state):
         last_msg = state["messages"][-1]
         if last_msg.tool_calls:
             return "tools"
         return END
 
-    builder.add_conditional_edges("coder", should_continue_coder, ["tools", END])
+    for node in ["coder", "scientist", "designer", "cloud", "linux"]:
+        builder.add_conditional_edges(node, should_continue_worker, ["tools", END])
     
     # Tools routing back to caller based on state['current_actor']
     def route_after_tools(state):
         return state.get("current_actor", "coder")
 
-    builder.add_conditional_edges("tools", route_after_tools, ["manager", "coder"])
+    builder.add_conditional_edges("tools", route_after_tools, ["manager", "coder", "scientist", "designer", "cloud", "linux"])
     
     # Entry point
     builder.add_edge(START, "manager")
