@@ -4,6 +4,7 @@ class ModelManager:
     # Model configuration: (model_name, num_gpu)
     MODELS = {
         "manager": ("llama3.3:70b", 0),      # IQ-heavy, CPU/RAM only
+        "scientist": ("llama3.1:70b", 0),    # DS-heavy, CPU/RAM only
         "coder": ("qwen2.5-coder:32b", 10),  # Code-heavy, partial GPU
         "summarizer": ("qwen2.5:0.5b", 30),  # Background, full GPU
     }
