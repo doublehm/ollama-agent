@@ -13,6 +13,8 @@ from langchain_core.messages import (
 )
 from agent.graph import build_graph
 import agent.confirm
+from agent.toolkits.mcp_hub import MCPHub
+import asyncio
 from rich.console import Console
 from rich.markdown import Markdown
 from prompt_toolkit import PromptSession
@@ -86,9 +88,13 @@ def trim_history(history, max_messages=40):
     # If no HumanMessage found in the window, just return the last max_messages
     return history[-max_messages:]
 
-def main():
-    print("Ollama Agent (gemma4:latest) — /clear to reset, /resume to load chat, /yolo to toggle auto-run, /exit to quit\n")
-    graph = build_graph()
+async def main():
+    print("Universal Expert Assistant (Local) — /clear to reset, /resume to load chat, /yolo to toggle auto-run, /mcp for tools, /exit to quit\n")
+    
+    mcp_hub = MCPHub()
+    mcp_tools = await mcp_hub.initialize()
+    
+    graph = build_graph(mcp_tools=mcp_tools)
     history = []
     state_file = ".ollama-agent-state.json"
 
@@ -103,7 +109,7 @@ def main():
 
     log_markdown("# Ollama Agent Session Started\n")
 
-    command_completer = WordCompleter(['/clear', '/exit', '/yolo', '/resume'], ignore_case=True)
+    command_completer = WordCompleter(['/clear', '/exit', '/yolo', '/resume', '/mcp'], ignore_case=True)
     session = PromptSession(completer=command_completer)
 
     while True:
@@ -111,13 +117,25 @@ def main():
             user_input = session.prompt("> ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\nBye.")
+            await mcp_hub.shutdown()
             sys.exit(0)
 
         if not user_input:
             continue
         if user_input == "/exit":
             print("Bye.")
+            await mcp_hub.shutdown()
             sys.exit(0)
+        if user_input == "/mcp":
+            console.print("\n[bold]Active MCP Tools:[/bold]")
+            if not mcp_tools:
+                console.print("  [dim]No MCP tools active.[/dim]")
+            else:
+                for t in mcp_tools:
+                    desc = t.description[:80] + "..." if len(t.description) > 80 else t.description
+                    console.print(f"  [green]{t.name}[/green]: {desc}")
+            print()
+            continue
         if user_input == "/clear":
             history = []
             if os.path.exists(state_file):
@@ -186,7 +204,7 @@ def main():
             trimmed_history = trim_history(history)
             processed_count = len(trimmed_history)
             for snapshot in graph.stream(
-                {"messages": trimmed_history},
+                {"messages": trimmed_history, "mcp_tools": mcp_tools},
                 stream_mode="values",
             ):
                 last_snapshot = snapshot
@@ -226,4 +244,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
