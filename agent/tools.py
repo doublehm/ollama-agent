@@ -142,6 +142,7 @@ from agent.vector_search import vector_search
 from agent.toolkits.linux import journal_explorer, system_service_control, hardware_stats
 from agent.toolkits.ds import run_ds_experiment
 from agent.toolkits.design import get_ui_patterns
+from agent.toolkits.cloud import terraform_validator, kubectl_navigator
 
 all_tools = [
     read_file,
@@ -160,6 +161,8 @@ all_tools = [
     hardware_stats,
     run_ds_experiment,
     get_ui_patterns,
+    terraform_validator,
+    kubectl_navigator,
 ]
 
 readonly_tools = [
