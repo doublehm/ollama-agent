@@ -143,6 +143,7 @@ from agent.toolkits.linux import journal_explorer, system_service_control, hardw
 from agent.toolkits.ds import run_ds_experiment
 from agent.toolkits.design import get_ui_patterns
 from agent.toolkits.cloud import terraform_validator, kubectl_navigator
+from agent.toolkits.vision import capture_host_screen, capture_android_screen
 
 all_tools = [
     read_file,
@@ -163,6 +164,8 @@ all_tools = [
     get_ui_patterns,
     terraform_validator,
     kubectl_navigator,
+    capture_host_screen,
+    capture_android_screen,
 ]
 
 readonly_tools = [
@@ -176,4 +179,6 @@ readonly_tools = [
     journal_explorer,
     hardware_stats,
     get_ui_patterns,
+    capture_host_screen,
+    capture_android_screen,
 ]
