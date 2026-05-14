@@ -106,8 +106,6 @@ def run_shell(command: str) -> str:
 class _GitCmdInput(BaseModel):
     args: str
 
-import shlex
-
 def _git_cmd_impl(args: str) -> str:
     if not confirm.ask_user_confirm("git_cmd", {"args": args}):
         return "Tool call declined by user."
