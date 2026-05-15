@@ -3,7 +3,7 @@ import signal
 import subprocess
 import shlex
 import httpx
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from langchain_core.tools import StructuredTool, tool
 from pydantic import BaseModel
 import agent.confirm as confirm
