@@ -11,7 +11,7 @@ dependencies = [
     "langchain-ollama>=1.1",
     "langchain-core>=1.3",
     "langchain-mcp-adapters>=0.1",
-    "duckduckgo-search>=8.0",
+    "ddgs>=8.1",
     "httpx>=0.25",
     "rich>=13.0",
     "prompt_toolkit>=3.0",
@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ollama-agent = "agent.repl:main"
+expert = "agent.repl:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
