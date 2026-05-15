@@ -1,0 +1,28 @@
+{
+  "github": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": ""}
+  },
+  "google-drive": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "mcp-google-drive"]
+  },
+  "gcp": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "@google-cloud/gcloud-mcp"]
+  },
+  "stitch": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "stitch-mcp"]
+  },
+  "notebooklm": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "notebooklm-mcp"]
+  }
+}

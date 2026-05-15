@@ -11,7 +11,7 @@ Local Claude Code-style agentic CLI powered by Ollama (gemma4:latest) and LangGr
 ## Install
 
 ```bash
-pip3 install langgraph langchain-ollama langchain-core "duckduckgo-search>=8.0"
+pip3 install langgraph langchain-ollama langchain-core "ddgs>=8.1"
 ```
 
 ## Run

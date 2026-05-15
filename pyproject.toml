@@ -10,9 +10,22 @@ dependencies = [
     "langgraph>=1.1",
     "langchain-ollama>=1.1",
     "langchain-core>=1.3",
-    "duckduckgo-search>=8.0",
+    "langchain-mcp-adapters>=0.1",
+    "ddgs>=8.1",
     "httpx>=0.25",
+    "rich>=13.0",
+    "prompt_toolkit>=3.0",
+    "sentence-transformers>=3.0",
+    "faiss-cpu>=1.7",
+    "numpy>=1.26",
+    "tree-sitter>=0.25.0",
+    "tree-sitter-python",
+    "tree-sitter-javascript",
+    "tree-sitter-typescript",
 ]
+
+[project.scripts]
+expert = "agent.repl:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
